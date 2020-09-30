@@ -11,7 +11,7 @@ fn main() {
 
 mod socket_check {
     pub enum Mode {Client, Server}
-    //const str IP_ADDR_AND_PORT = "127.0.0.1:12123"
+    const IP_ADDR_AND_PORT: &str = "127.0.0.1:34254";
 
     pub fn do_the_job(mode: Mode) -> () {
         match mode {
@@ -55,7 +55,7 @@ mod socket_check {
         use std::io::Write;
 
         pub fn do_the_clients_job() -> () {
-            let mut stream = std::net::TcpStream::connect("127.0.0.1:34254").unwrap();
+            let mut stream = std::net::TcpStream::connect(super::IP_ADDR_AND_PORT).unwrap();
         //    stream.write_all(b"some_bytes").unwrap();
             let example = super::dev_topic();
             let message_pack_buffer: Vec<u8> = rmp_serde::to_vec(&example).unwrap();
@@ -69,7 +69,8 @@ mod socket_check {
         use std::io::Read;
 
         pub fn start_server() {
-            let listener = std::net::TcpListener::bind("127.0.0.1:34254").unwrap();
+            println!("Server started");
+            let listener = std::net::TcpListener::bind(super::IP_ADDR_AND_PORT).unwrap();
             for stream in listener.incoming() {
                 let mut stream =  stream.unwrap();
                 println!("stream {:?} was accepted", stream);
@@ -79,7 +80,28 @@ mod socket_check {
                 let message: Topic = rmp_serde::from_slice(&income_buffer).unwrap();
                 println!("send message is: {:?}", message);
             }
+            println!("Server stopped");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::socket_check::*;
+
+    #[test]
+    fn dummy_test(){
+        println!("from dummy test");
+        start_server_thread();
+        //std::thread::sleep(std::time::Duration::from_secs(3));
+        //println!("should be in sleep for 3 secs");
+        do_the_job(Mode::Client);
+    }
+
+    fn start_server_thread() {
+        let server = std::thread::spawn(move || {
+            do_the_job(Mode::Server);
+        });
     }
 
 }
