@@ -1,6 +1,7 @@
 extern crate rmp_serde;
 
 fn main() {
+    env_logger::init();
     let mode = std::env::args().nth(1).expect("You should specify '--client' or '--server' mode.");
     match mode.as_str() {
         "--client" => socket_check::do_the_job(socket_check::Mode::Client),
@@ -60,7 +61,7 @@ mod socket_check {
             let example = super::dev_topic();
             let message_pack_buffer: Vec<u8> = rmp_serde::to_vec(&example).unwrap();
             let bytes_send = stream.write(&message_pack_buffer).unwrap();
-            println!("{} was send to server", bytes_send);
+            log::info!("{} was send to server", bytes_send);
         }
     
     }
@@ -69,18 +70,18 @@ mod socket_check {
         use std::io::Read;
 
         pub fn start_server() {
-            println!("Server started");
+            log::info!("Server started");
             let listener = std::net::TcpListener::bind(super::IP_ADDR_AND_PORT).unwrap();
             for stream in listener.incoming() {
                 let mut stream =  stream.unwrap();
-                println!("stream {:?} was accepted", stream);
+                log::info!("stream {:?} was accepted", stream);
                 let mut income_buffer: Vec<u8> = Vec::new();
                 let bytes_read = stream.read_to_end(&mut income_buffer).unwrap(); // why read_to_end instead just read?
-                println!("{} bytes was read", bytes_read);
+                log::info!("{} bytes was read", bytes_read);
                 let message: Topic = rmp_serde::from_slice(&income_buffer).unwrap();
-                println!("send message is: {:?}", message);
+                log::info!("send message is: {:?}", message);
             }
-            println!("Server stopped");
+            log::info!("Server stopped");
         }
     }
 }
@@ -92,6 +93,7 @@ mod tests {
     #[test]
     fn dummy_test(){
         println!("from dummy test");
+        initialize_logger();
         start_server_thread();
         //std::thread::sleep(std::time::Duration::from_secs(3));
         //println!("should be in sleep for 3 secs");
@@ -99,9 +101,15 @@ mod tests {
     }
 
     fn start_server_thread() {
-        let server = std::thread::spawn(move || {
+        std::thread::spawn( || {
+            log::debug!("The test is about to start server");
             do_the_job(Mode::Server);
         });
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+
+    fn initialize_logger() {
+        env_logger::init();
     }
 
 }
